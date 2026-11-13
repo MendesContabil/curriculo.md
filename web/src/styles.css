@@ -2380,56 +2380,6 @@ button {
   margin-top: -12px;
 }
 
-.demo-access {
-  border-top: 1px dashed var(--line-strong);
-  padding-top: 16px;
-  display: flex;
-  flex-direction: column;
-  gap: 8px;
-}
-
-.demo-access > span {
-  font-size: 0.68rem;
-  text-transform: uppercase;
-  letter-spacing: 0.1em;
-  color: var(--muted);
-  font-weight: 600;
-}
-
-.demo-buttons {
-  display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 8px;
-}
-
-.demo-buttons button {
-  display: flex;
-  flex-direction: column;
-  align-items: flex-start;
-  gap: 1px;
-  padding: 10px 12px;
-  border: 1px solid var(--line);
-  border-radius: 11px;
-  background: var(--surface);
-  text-align: left;
-  transition: border-color 0.15s ease, background 0.15s ease;
-}
-
-.demo-buttons button:hover {
-  border-color: var(--primary);
-  background: var(--primary-soft);
-}
-
-.demo-buttons strong {
-  font-size: 0.8rem;
-}
-
-.demo-buttons span {
-  font-size: 0.68rem;
-  color: var(--muted);
-  word-break: break-all;
-}
-
 /* ============================================================
    Responsive
    ============================================================ */

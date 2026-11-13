@@ -32,12 +32,6 @@ export default function Login() {
     }
   };
 
-  const fill = (demoEmail, demoPassword) => {
-    setEmail(demoEmail);
-    setPassword(demoPassword);
-    setError('');
-  };
-
   return (
     <div className="login">
       <section className="login-brand">
@@ -104,20 +98,6 @@ export default function Login() {
               {busy ? 'Entrando…' : 'Entrar'}
             </Button>
           </form>
-
-          <div className="demo-access">
-            <span>Acessos de demonstração</span>
-            <div className="demo-buttons">
-              <button type="button" onClick={() => fill('psi@consultorio.app', 'psi123456')}>
-                <strong>Psicóloga</strong>
-                <span>psi@consultorio.app</span>
-              </button>
-              <button type="button" onClick={() => fill('paciente@demo.app', 'paciente123')}>
-                <strong>Paciente</strong>
-                <span>paciente@demo.app</span>
-              </button>
-            </div>
-          </div>
         </div>
       </section>
     </div>
