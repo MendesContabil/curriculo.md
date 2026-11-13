@@ -16,6 +16,7 @@ import {
   formatDateTime,
   originLabel,
   todayISO,
+  docKindMeta,
   useToast,
 } from '../components/ui.jsx';
 import {
@@ -522,6 +523,9 @@ export default function PatientDetail() {
                     >
                       <option value="document">Documento</option>
                       <option value="receipt">Recibo</option>
+                      <option value="certificate">Atestado</option>
+                      <option value="declaration">Declaração</option>
+                      <option value="support">Material de apoio</option>
                     </select>
                   </Field>
                   <Field label="Arquivo">
@@ -568,9 +572,7 @@ export default function PatientDetail() {
                           {formatDate(doc.createdAt)} ·{' '}
                           {doc.direction === 'from_patient'
                             ? 'Comprovante do paciente'
-                            : doc.kind === 'receipt'
-                              ? 'Recibo enviado'
-                              : 'Documento enviado'}
+                            : `${docKindMeta(doc.kind).label} enviado`}
                         </span>
                       </div>
                       <div className="row-actions">

@@ -3,6 +3,7 @@ import { NavLink } from 'react-router-dom';
 import { api } from '../api';
 import { useAuth } from '../auth';
 import { ProofModal } from '../components/modals.jsx';
+import { SlotPickerModal, SlotRequestModal } from '../components/scheduleModals.jsx';
 import {
   Badge,
   Button,
@@ -11,8 +12,11 @@ import {
   Progress,
   Spinner,
   StatCard,
+  docKindMeta,
   formatBRL,
+  formatClock,
   formatDate,
+  formatWeekday,
   originLabel,
   useToast,
 } from '../components/ui.jsx';
@@ -20,15 +24,18 @@ import {
   IconCalendar,
   IconCard,
   IconCheck,
+  IconClock,
   IconCopy,
   IconDownload,
   IconFile,
   IconUpload,
+  IconVideo,
   IconWallet,
 } from '../components/icons.jsx';
 
 const TABS = [
   { key: 'resumo', to: '/minha-area', label: 'Resumo' },
+  { key: 'agenda', to: '/minha-area/agenda', label: 'Agenda' },
   { key: 'pagamentos', to: '/minha-area/pagamentos', label: 'Pagamentos' },
   { key: 'documentos', to: '/minha-area/documentos', label: 'Documentos' },
 ];
@@ -64,7 +71,7 @@ function DocumentList({ documents, emptyTitle, emptyText, onProof }) {
             </span>
           </div>
           <div className="row-actions">
-            {doc.kind === 'receipt' && <Badge tone="teal">Recibo</Badge>}
+            <Badge tone={docKindMeta(doc.kind).tone}>{docKindMeta(doc.kind).label}</Badge>
             <a
               className="icon-btn"
               href={`/api/files/${doc.fileId}?download=1`}
@@ -83,15 +90,20 @@ export default function PatientArea({ section = 'resumo' }) {
   const { user } = useAuth();
   const toast = useToast();
   const [data, setData] = useState(null);
+  const [agenda, setAgenda] = useState(null);
   const [loading, setLoading] = useState(true);
   const [proofOpen, setProofOpen] = useState(false);
   const [preselected, setPreselected] = useState(null);
+  const [slotRequest, setSlotRequest] = useState(null);
+  const [slotPicker, setSlotPicker] = useState(null);
 
   const load = () => {
     setLoading(true);
-    api
-      .get('/api/me/overview')
-      .then(setData)
+    Promise.all([api.get('/api/me/overview'), api.get('/api/me/agenda')])
+      .then(([overview, agendaData]) => {
+        setData(overview);
+        setAgenda(agendaData);
+      })
       .catch((err) => toast(err.message, 'error'))
       .finally(() => setLoading(false));
   };
@@ -118,6 +130,25 @@ export default function PatientArea({ section = 'resumo' }) {
   const activePackages = (data?.packages || []).filter(
     (pkg) => pkg.sessionsUsed < pkg.sessionsTotal
   );
+
+  const upcomingSessions = agenda?.upcoming || [];
+  const sessionHistory = agenda?.history || [];
+  const availableSlots = agenda?.availability || [];
+
+  const availabilityByDate = useMemo(() => {
+    const days = new Map();
+    availableSlots.forEach((slot) => {
+      if (!days.has(slot.date)) days.set(slot.date, []);
+      days.get(slot.date).push(slot);
+    });
+    return [...days.entries()];
+  }, [availableSlots]);
+
+  const sessionStatusLabel = (session) => {
+    if (session.status === 'pending') return 'Aguardando confirmação';
+    if (session.status === 'reschedule_requested') return 'Remarcação solicitada';
+    return 'Confirmada';
+  };
 
   const copyPix = async () => {
     try {
@@ -292,6 +323,180 @@ export default function PatientArea({ section = 'resumo' }) {
         </>
       )}
 
+      {section === 'agenda' && (
+        <>
+          <div className="stat-grid">
+            <StatCard
+              icon={<IconCalendar />}
+              label="Próximas sessões"
+              value={upcomingSessions.length}
+              hint="Confirmadas ou aguardando"
+              tone="blue"
+            />
+            <StatCard
+              icon={<IconCheck />}
+              label="Consultas realizadas"
+              value={sessionHistory.length}
+              hint="Histórico do acompanhamento"
+              tone="green"
+            />
+            <StatCard
+              icon={<IconClock />}
+              label="Horários livres"
+              value={availableSlots.length}
+              hint="Publicados pela psicóloga"
+            />
+          </div>
+
+          <Card className="panel">
+            <div className="panel-head">
+              <div>
+                <h2>Próximas sessões</h2>
+                <p>Teleatendimento por vídeo com link enviado pela psicóloga.</p>
+              </div>
+            </div>
+            {upcomingSessions.length === 0 ? (
+              <EmptyState
+                icon={<IconCalendar />}
+                title="Nenhuma sessão agendada"
+                description="Escolha um horário livre abaixo para solicitar sua próxima sessão."
+              />
+            ) : (
+              <ul className="session-list">
+                {upcomingSessions.map((session) => (
+                  <li key={session.id} className="session-card">
+                    <span className="session-icon">
+                      <IconVideo width={18} height={18} />
+                    </span>
+                    <div className="list-main">
+                      <div className="session-title">
+                        <strong>
+                          {formatDate(session.date)} às {formatClock(session.time)}
+                        </strong>
+                        <Badge
+                          tone={
+                            session.status === 'confirmed'
+                              ? 'success'
+                              : session.status === 'reschedule_requested'
+                                ? 'teal'
+                                : 'warning'
+                          }
+                        >
+                          {sessionStatusLabel(session)}
+                        </Badge>
+                      </div>
+                      <span>
+                        {formatWeekday(session.date)} · {session.durationMinutes} min ·
+                        teleatendimento
+                      </span>
+                      {session.status === 'reschedule_requested' && session.rescheduleDate && (
+                        <p className="session-reschedule">
+                          Novo horário pedido: {formatDate(session.rescheduleDate)} às{' '}
+                          {formatClock(session.rescheduleTime)}
+                        </p>
+                      )}
+                    </div>
+                    <div className="session-actions">
+                      {session.status === 'confirmed' && session.meetingUrl && (
+                        <a
+                          className="btn btn-primary btn-sm"
+                          href={session.meetingUrl}
+                          target="_blank"
+                          rel="noreferrer"
+                        >
+                          <IconVideo width={16} height={16} /> Entrar na sala
+                        </a>
+                      )}
+                      {session.status === 'confirmed' && (
+                        <Button size="sm" variant="ghost" onClick={() => setSlotPicker(session)}>
+                          <IconCalendar width={16} height={16} /> Remarcar
+                        </Button>
+                      )}
+                    </div>
+                  </li>
+                ))}
+              </ul>
+            )}
+          </Card>
+
+          <Card className="panel">
+            <div className="panel-head">
+              <div>
+                <h2>Horários disponíveis</h2>
+                <p>Clique em um horário para solicitar o agendamento.</p>
+              </div>
+            </div>
+            {availabilityByDate.length === 0 ? (
+              <EmptyState
+                icon={<IconClock />}
+                title="Sem horários publicados"
+                description="A psicóloga ainda não publicou horários livres. Fale com ela pelo chat."
+              />
+            ) : (
+              <div className="slot-grid">
+                {availabilityByDate.map(([date, slots]) => (
+                  <div key={date} className="slot-day">
+                    <div className="slot-day-head">
+                      <strong>{formatWeekday(date)}</strong>
+                      <span>{formatDate(date)}</span>
+                    </div>
+                    <div className="slot-chips">
+                      {slots.map((slot) => (
+                        <button
+                          key={slot.id}
+                          type="button"
+                          className="slot-chip"
+                          onClick={() => setSlotRequest({ slot, appointment: null })}
+                        >
+                          {formatClock(slot.startTime)}
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
+          </Card>
+
+          <Card className="panel">
+            <div className="panel-head">
+              <div>
+                <h2>Histórico de consultas realizadas</h2>
+                <p>Sessões concluídas no seu acompanhamento.</p>
+              </div>
+            </div>
+            {sessionHistory.length === 0 ? (
+              <EmptyState
+                icon={<IconCheck />}
+                title="Nenhuma consulta realizada"
+                description="Após cada sessão concluída, o registro aparece aqui."
+              />
+            ) : (
+              <ul className="session-list">
+                {sessionHistory.map((session) => (
+                  <li key={session.id} className="session-card">
+                    <span className="session-icon session-icon-done">
+                      <IconCheck width={18} height={18} />
+                    </span>
+                    <div className="list-main">
+                      <div className="session-title">
+                        <strong>
+                          {formatDate(session.date)} às {formatClock(session.time)}
+                        </strong>
+                        <Badge tone="neutral">Realizada</Badge>
+                      </div>
+                      <span>
+                        {formatWeekday(session.date)} · {session.durationMinutes} min
+                      </span>
+                    </div>
+                  </li>
+                ))}
+              </ul>
+            )}
+          </Card>
+        </>
+      )}
+
       {section === 'pagamentos' && (
         <>
           <div className="stat-grid">
@@ -437,8 +642,8 @@ export default function PatientArea({ section = 'resumo' }) {
           <Card className="panel">
             <div className="panel-head">
               <div>
-                <h2>Recebidos da psicóloga</h2>
-                <p>Recibos e documentos para baixar.</p>
+                <h2>Documentos compartilhados</h2>
+                <p>Atestados, declarações, materiais de apoio e recibos.</p>
               </div>
             </div>
             <DocumentList
@@ -473,6 +678,25 @@ export default function PatientArea({ section = 'resumo' }) {
         onClose={() => setProofOpen(false)}
         payments={data.payments}
         preselected={preselected}
+        onSaved={load}
+      />
+
+      <SlotPickerModal
+        open={Boolean(slotPicker)}
+        onClose={() => setSlotPicker(null)}
+        slots={availableSlots}
+        onPick={(slot) => {
+          const appointment = slotPicker;
+          setSlotPicker(null);
+          setSlotRequest({ slot, appointment });
+        }}
+      />
+
+      <SlotRequestModal
+        open={Boolean(slotRequest)}
+        onClose={() => setSlotRequest(null)}
+        slot={slotRequest?.slot}
+        appointment={slotRequest?.appointment}
         onSaved={load}
       />
     </div>

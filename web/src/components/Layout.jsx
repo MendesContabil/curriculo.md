@@ -14,19 +14,26 @@ import {
   IconX,
   IconCard,
   IconClipboard,
+  IconCalendar,
+  IconMessage,
 } from './icons.jsx';
 
 const ADMIN_NAV = [
   { to: '/', label: 'Painel', icon: IconHome, end: true },
   { to: '/pacientes', label: 'Pacientes', icon: IconUsers },
+  { to: '/agenda', label: 'Agenda', icon: IconCalendar },
   { to: '/financeiro', label: 'Financeiro', icon: IconWallet },
+  { to: '/documentos', label: 'Documentos', icon: IconFile },
+  { to: '/chat', label: 'Chat', icon: IconMessage },
   { to: '/configuracoes', label: 'Aparência', icon: IconPalette },
 ];
 
 const PATIENT_NAV = [
   { to: '/minha-area', label: 'Minha área', icon: IconHome, end: true },
+  { to: '/minha-area/agenda', label: 'Agenda', icon: IconCalendar },
   { to: '/minha-area/pagamentos', label: 'Pagamentos', icon: IconCard },
   { to: '/minha-area/documentos', label: 'Documentos', icon: IconFile },
+  { to: '/minha-area/chat', label: 'Chat', icon: IconMessage },
 ];
 
 export default function Layout({ children }) {

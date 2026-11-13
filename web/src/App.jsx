@@ -9,6 +9,9 @@ import PatientDetail from './pages/PatientDetail.jsx';
 import Finance from './pages/Finance.jsx';
 import Settings from './pages/Settings.jsx';
 import PatientArea from './pages/PatientArea.jsx';
+import Schedule from './pages/Schedule.jsx';
+import Documents from './pages/Documents.jsx';
+import Chat from './pages/Chat.jsx';
 
 function Protected({ roles, children }) {
   const { user, loading } = useAuth();
@@ -56,10 +59,34 @@ export default function App() {
           }
         />
         <Route
+          path="/agenda"
+          element={
+            <Protected roles={['admin']}>
+              <Schedule />
+            </Protected>
+          }
+        />
+        <Route
           path="/financeiro"
           element={
             <Protected roles={['admin']}>
               <Finance />
+            </Protected>
+          }
+        />
+        <Route
+          path="/documentos"
+          element={
+            <Protected roles={['admin']}>
+              <Documents />
+            </Protected>
+          }
+        />
+        <Route
+          path="/chat"
+          element={
+            <Protected roles={['admin']}>
+              <Chat />
             </Protected>
           }
         />
@@ -88,10 +115,26 @@ export default function App() {
           }
         />
         <Route
+          path="/minha-area/agenda"
+          element={
+            <Protected roles={['patient']}>
+              <PatientArea section="agenda" />
+            </Protected>
+          }
+        />
+        <Route
           path="/minha-area/documentos"
           element={
             <Protected roles={['patient']}>
               <PatientArea section="documentos" />
+            </Protected>
+          }
+        />
+        <Route
+          path="/minha-area/chat"
+          element={
+            <Protected roles={['patient']}>
+              <Chat />
             </Protected>
           }
         />

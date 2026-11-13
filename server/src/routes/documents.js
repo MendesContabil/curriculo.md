@@ -1,7 +1,7 @@
 import { Router } from 'express';
 import { query } from '../db.js';
 import { requireAdmin } from '../auth.js';
-import { ah, mapDocument } from '../helpers.js';
+import { DOC_KINDS, ah, mapDocument } from '../helpers.js';
 import { storeFileRecord, upload } from '../upload.js';
 
 const router = Router();
@@ -26,7 +26,7 @@ router.post(
   ah(async (req, res) => {
     const patientId = Number(req.params.id);
     if (!req.file) return res.status(400).json({ error: 'Selecione um arquivo para enviar.' });
-    const kind = req.body?.kind === 'receipt' ? 'receipt' : 'document';
+    const kind = DOC_KINDS.includes(String(req.body?.kind)) ? String(req.body.kind) : 'document';
     const fileId = await storeFileRecord(req.file);
     const { rows } = await query(
       `insert into documents (patient_id, file_id, title, kind, direction)

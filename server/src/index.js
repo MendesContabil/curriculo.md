@@ -17,6 +17,9 @@ import documentsRoutes from './routes/documents.js';
 import financeRoutes from './routes/finance.js';
 import patientAreaRoutes from './routes/patientArea.js';
 import filesRoutes from './routes/files.js';
+import scheduleRoutes from './routes/schedule.js';
+import chatRoutes from './routes/chat.js';
+import sharedDocumentsRoutes from './routes/sharedDocuments.js';
 
 const app = express();
 app.set('trust proxy', 1);
@@ -122,6 +125,9 @@ app.use('/api/patients', patientsRoutes);
 app.use('/api/files', filesRoutes);
 app.use('/api/me', patientAreaRoutes);
 app.use('/api', financeRoutes);
+app.use('/api', scheduleRoutes);
+app.use('/api/chat', chatRoutes);
+app.use('/api/shared-documents', sharedDocumentsRoutes);
 
 app.use((_req, res) => res.status(404).json({ error: 'Rota não encontrada.' }));
 

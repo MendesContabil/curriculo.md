@@ -47,6 +47,25 @@ export const initials = (name = '') =>
 
 export const originLabel = (origin) => (origin === 'leve_saude' ? 'Leve Saúde' : 'Particular');
 
+export const DOC_KIND_META = {
+  document: { label: 'Documento', tone: 'neutral' },
+  receipt: { label: 'Recibo', tone: 'success' },
+  certificate: { label: 'Atestado', tone: 'teal' },
+  declaration: { label: 'Declaração', tone: 'teal' },
+  support: { label: 'Material de apoio', tone: 'neutral' },
+};
+
+export const docKindMeta = (kind) => DOC_KIND_META[kind] || DOC_KIND_META.document;
+
+export const formatClock = (value) => String(value || '').slice(0, 5);
+
+export function formatWeekday(value) {
+  if (!value) return '';
+  const date = new Date(`${String(value).slice(0, 10)}T12:00:00`);
+  if (Number.isNaN(date.getTime())) return '';
+  return date.toLocaleDateString('pt-BR', { weekday: 'long' });
+}
+
 /* ---------- primitives ---------- */
 
 export function Button({ variant = 'primary', size = 'md', className = '', ...props }) {

@@ -68,6 +68,59 @@ export function mapDocument(row) {
   };
 }
 
+export const DOC_KINDS = ['document', 'receipt', 'certificate', 'declaration', 'support'];
+
+export function mapSlot(row) {
+  return {
+    id: row.id,
+    date: row.slot_date,
+    startTime: row.start_time,
+    endTime: row.end_time,
+    isActive: row.is_active,
+    isFuture: row.is_future,
+    status: row.booking_id ? 'booked' : 'free',
+    appointmentId: row.booking_id || null,
+    appointmentStatus: row.booking_status || null,
+    patientName: row.patient_name || null,
+  };
+}
+
+export function mapAppointment(row) {
+  return {
+    id: row.id,
+    patientId: row.patient_id,
+    patientName: row.patient_name || null,
+    patientPhone: row.patient_phone || null,
+    patientEmail: row.patient_email || null,
+    slotId: row.slot_id,
+    date: row.scheduled_date,
+    time: row.scheduled_time,
+    durationMinutes: row.duration_minutes,
+    status: row.status,
+    meetingUrl: row.meeting_url || '',
+    patientNote: row.patient_note || '',
+    adminNote: row.admin_note || '',
+    rescheduleSlotId: row.reschedule_slot_id,
+    rescheduleDate: row.reschedule_date || null,
+    rescheduleTime: row.reschedule_time || null,
+    rescheduleNote: row.reschedule_note || '',
+    isFuture: row.is_future,
+    createdAt: row.created_at,
+    updatedAt: row.updated_at,
+  };
+}
+
+export function mapChatMessage(row) {
+  return {
+    id: row.id,
+    patientId: row.patient_id,
+    senderRole: row.sender_role,
+    senderName: row.sender_name || '',
+    body: row.body,
+    createdAt: row.created_at,
+  };
+}
+
 export function formatLabel(sessions) {
   if (sessions === 1) return 'Sessão avulsa';
   return `Pacote ${sessions} sessões`;

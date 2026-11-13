@@ -203,3 +203,30 @@ export const IconClock = make(
     <path d="M12 7.4V12l3 2" />
   </>
 );
+
+export const IconVideo = make(
+  <>
+    <rect x="2.8" y="6.2" width="12.6" height="11.6" rx="2.4" />
+    <path d="m15.4 11 5.8-3.2v8.4L15.4 13" />
+  </>
+);
+
+export const IconMessage = make(
+  <>
+    <path d="M20.5 11.5a7.7 7.7 0 0 1-8 7.5 8.6 8.6 0 0 1-3.4-.7L4.5 20l1.2-4a7.2 7.2 0 0 1-1.2-4 7.7 7.7 0 0 1 8-7.4 7.7 7.7 0 0 1 8 7Z" />
+  </>
+);
+
+export const IconSend = make(
+  <>
+    <path d="M21 3 10.5 13.5" />
+    <path d="M21 3 14.5 21l-4-7.5L3 9.5Z" />
+  </>
+);
+
+export const IconLink = make(
+  <>
+    <path d="M10.5 13.5a4.5 4.5 0 0 0 6.4 0l2.2-2.2a4.5 4.5 0 0 0-6.4-6.4l-1.1 1.1" />
+    <path d="M13.5 10.5a4.5 4.5 0 0 0-6.4 0l-2.2 2.2a4.5 4.5 0 0 0 6.4 6.4l1.1-1.1" />
+  </>
+);

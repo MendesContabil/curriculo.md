@@ -103,10 +103,50 @@ create table if not exists documents (
   created_at timestamptz not null default now()
 );
 
+create table if not exists availability_slots (
+  id serial primary key,
+  date date not null,
+  start_time time not null,
+  end_time time not null,
+  is_active boolean not null default true,
+  created_at timestamptz not null default now(),
+  unique (date, start_time)
+);
+
+create table if not exists appointments (
+  id serial primary key,
+  patient_id integer not null references patients(id) on delete cascade,
+  slot_id integer references availability_slots(id) on delete set null,
+  scheduled_date date not null,
+  scheduled_time time not null,
+  duration_minutes integer not null default 50,
+  status text not null default 'pending',
+  meeting_url text,
+  patient_note text,
+  admin_note text,
+  reschedule_slot_id integer references availability_slots(id) on delete set null,
+  reschedule_note text,
+  created_at timestamptz not null default now(),
+  updated_at timestamptz not null default now()
+);
+
+create table if not exists chat_messages (
+  id serial primary key,
+  patient_id integer not null references patients(id) on delete cascade,
+  sender_role text not null,
+  sender_name text,
+  body text not null,
+  created_at timestamptz not null default now()
+);
+
 create index if not exists idx_notes_patient on evolution_notes(patient_id);
 create index if not exists idx_packages_patient on packages(patient_id);
 create index if not exists idx_payments_patient on payments(patient_id);
 create index if not exists idx_documents_patient on documents(patient_id);
+create index if not exists idx_slots_date on availability_slots(date);
+create index if not exists idx_appointments_patient on appointments(patient_id);
+create index if not exists idx_appointments_slot on appointments(slot_id);
+create index if not exists idx_chat_patient on chat_messages(patient_id, created_at);
 `;
 
 const MONTHS = [
@@ -261,6 +301,81 @@ async function seed() {
     );
   } catch (err) {
     console.warn('Não foi possível criar o recibo de demonstração:', err.message);
+  }
+
+  // Agenda de demonstração: noites de semana e finais de semana.
+  const slotsCount = await query('select count(*)::int as c from availability_slots');
+  if (slotsCount.rows[0].c === 0) {
+    const upcomingWeekday = (target) => {
+      const base = new Date();
+      base.setUTCHours(12, 0, 0, 0);
+      const diff = (target - base.getUTCDay() + 7) % 7 || 7;
+      base.setUTCDate(base.getUTCDate() + diff);
+      return base.toISOString().slice(0, 10);
+    };
+    const saturday = upcomingWeekday(6);
+    const sunday = upcomingWeekday(0);
+    const tuesday = upcomingWeekday(2);
+    const thursday = upcomingWeekday(4);
+    const lastSaturday = (() => {
+      const base = new Date();
+      base.setUTCHours(12, 0, 0, 0);
+      base.setUTCDate(base.getUTCDate() - 7);
+      return base.toISOString().slice(0, 10);
+    })();
+
+    const slotRes = await query(
+      `insert into availability_slots (date, start_time, end_time) values
+        ($1, '09:00', '09:50'), ($1, '10:00', '10:50'),
+        ($2, '18:00', '18:50'),
+        ($3, '19:00', '19:50'),
+        ($4, '20:00', '20:50'),
+        ($5, '19:00', '19:50')
+       returning id, to_char(date, 'YYYY-MM-DD') as day, to_char(start_time, 'HH24:MI') as start_time`,
+      [saturday, sunday, tuesday, thursday, lastSaturday]
+    );
+    const findSlot = (day, startTime) =>
+      slotRes.rows.find((row) => row.day === day && row.start_time === startTime);
+
+    const mariaSaturday = findSlot(saturday, '09:00');
+    const joaoSunday = findSlot(sunday, '18:00');
+    const mariaPast = findSlot(lastSaturday, '19:00');
+
+    if (mariaSaturday) {
+      await query(
+        `insert into appointments
+          (patient_id, slot_id, scheduled_date, scheduled_time, duration_minutes, status, meeting_url)
+         values ($1, $2, $3, '09:00', 50, 'confirmed', $4)`,
+        [mariaId, mariaSaturday.id, saturday, 'https://meet.google.com/demo-sala-helena']
+      );
+    }
+    if (joaoSunday) {
+      await query(
+        `insert into appointments
+          (patient_id, slot_id, scheduled_date, scheduled_time, duration_minutes, status, patient_note)
+         values ($1, $2, $3, '18:00', 50, 'pending', $4)`,
+        [joaoId, joaoSunday.id, sunday, 'Prefiro no fim do dia, se possível.']
+      );
+    }
+    if (mariaPast) {
+      await query(
+        `insert into appointments
+          (patient_id, slot_id, scheduled_date, scheduled_time, duration_minutes, status)
+         values ($1, $2, $3, '19:00', 50, 'completed')`,
+        [mariaId, mariaPast.id, lastSaturday]
+      );
+    }
+  }
+
+  const chatCount = await query('select count(*)::int as c from chat_messages');
+  if (chatCount.rows[0].c === 0) {
+    await query(
+      `insert into chat_messages (patient_id, sender_role, sender_name, body, created_at) values
+        ($1, 'patient', 'Maria Oliveira', 'Olá, Dra. Helena! Consegui pagar o pacote pelo PIX hoje.', now() - interval '2 days'),
+        ($1, 'admin', 'Dra. Helena Martins', 'Que ótimo, Maria! Já registrei o recebimento. Qualquer coisa me avise por aqui.', now() - interval '2 days' + interval '1 hour'),
+        ($2, 'patient', 'João Ferreira', 'Dra., posso remarcar nossa sessão de domingo?', now() - interval '5 hours')`,
+      [mariaId, joaoId]
+    );
   }
 
   console.log('Seed de demonstração aplicado.');
